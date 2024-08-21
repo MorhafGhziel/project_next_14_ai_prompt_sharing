@@ -45,7 +45,7 @@ const handler = NextAuth({
           }
         }
 
-        return true; // Allow sign-in
+        return true; // Allow sign-innn
       } catch (error) {
         console.error("Error during sign-in:", error);
         return false; // Disallow sign-in if there is an error
