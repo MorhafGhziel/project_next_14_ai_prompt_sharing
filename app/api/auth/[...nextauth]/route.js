@@ -48,7 +48,7 @@ const handler = NextAuth({
         return true; // Allow sign-in
       } catch (error) {
         console.error("Error during sign-in:", error);
-        return false;
+        return false; //fwfwfwfw
       }
     },
   },
