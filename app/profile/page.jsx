@@ -8,33 +8,20 @@ import Profile from "@components/Profile";
 
 const MyProfile = () => {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   const [myPosts, setMyPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "loading") return; // Don't fetch data while session is loading
+    const fetchPosts = async () => {
+      const response = await fetch(`/api/users/${session?.user.id}/posts`);
+      const data = await response.json();
 
-    if (!session?.user?.id) {
-      // Redirect to login if no session
-      router.push("/auth/login");
-    } else {
-      const fetchPosts = async () => {
-        try {
-          const response = await fetch(`/api/users/${session?.user.id}/posts`);
-          const data = await response.json();
-          setMyPosts(data);
-        } catch (error) {
-          console.error("Error fetching posts:", error);
-        } finally {
-          setIsLoading(false); // Stop loading after the fetch
-        }
-      };
+      setMyPosts(data);
+    };
 
-      fetchPosts();
-    }
-  }, [session?.user?.id, status, router]);
+    if (session?.user.id) fetchPosts();
+  }, [session?.user.id]);
 
   const handleEdit = (post) => {
     router.push(`/update-prompt?id=${post._id}`);
@@ -52,17 +39,13 @@ const MyProfile = () => {
         });
 
         const filteredPosts = myPosts.filter((item) => item._id !== post._id);
+
         setMyPosts(filteredPosts);
       } catch (error) {
         console.log(error);
       }
     }
   };
-
-  // Show a loading message until the posts are fetched
-  if (isLoading) {
-    return <p>Loading your posts...</p>;
-  }
 
   return (
     <Profile
