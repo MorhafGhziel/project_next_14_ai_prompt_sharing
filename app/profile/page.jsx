@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 
 import Profile from "@components/Profile";
@@ -11,13 +11,19 @@ const MyProfile = () => {
   const { data: session } = useSession();
 
   const [myPosts, setMyPosts] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const response = await fetch(`/api/users/${session?.user.id}/posts`);
-      const data = await response.json();
+      try {
+        const response = await fetch(`/api/users/${session?.user.id}/posts`);
+        if (!response.ok) throw new Error("Failed to fetch my posts");
 
-      setMyPosts(data);
+        const data = await response.json();
+        setMyPosts(data);
+      } catch (err) {
+        setError(err.message);
+      }
     };
 
     if (session?.user.id) fetchPosts();
@@ -39,22 +45,28 @@ const MyProfile = () => {
         });
 
         const filteredPosts = myPosts.filter((item) => item._id !== post._id);
-
         setMyPosts(filteredPosts);
       } catch (error) {
         console.log(error);
+        setError("Failed to delete prompt");
       }
     }
   };
 
+  if (error) {
+    return <div>Error: {error}</div>; // Handle error display
+  }
+
   return (
-    <Profile
-      name="My"
-      desc="Welcome to your personalized profile page. Share your exceptional prompts and inspire others with the power of your imagination"
-      data={myPosts}
-      handleEdit={handleEdit}
-      handleDelete={handleDelete}
-    />
+    <Suspense fallback={<div>Loading...</div>}>
+      <Profile
+        name="My"
+        desc="Welcome to your personalized profile page. Share your exceptional prompts and inspire others with the power of your imagination"
+        data={myPosts}
+        handleEdit={handleEdit}
+        handleDelete={handleDelete}
+      />
+    </Suspense>
   );
 };
 
