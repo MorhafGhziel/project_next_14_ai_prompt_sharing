@@ -8,20 +8,33 @@ import Profile from "@components/Profile";
 
 const MyProfile = () => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [myPosts, setMyPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      const response = await fetch(`/api/users/${session?.user.id}/posts`);
-      const data = await response.json();
+    if (status === "loading") return; // Don't fetch data while session is loading
 
-      setMyPosts(data);
-    };
+    if (!session?.user?.id) {
+      // Redirect to login if no session
+      router.push("/auth/login");
+    } else {
+      const fetchPosts = async () => {
+        try {
+          const response = await fetch(`/api/users/${session?.user.id}/posts`);
+          const data = await response.json();
+          setMyPosts(data);
+        } catch (error) {
+          console.error("Error fetching posts:", error);
+        } finally {
+          setIsLoading(false); // Stop loading after the fetch
+        }
+      };
 
-    if (session?.user.id) fetchPosts();
-  }, [session?.user.id]);
+      fetchPosts();
+    }
+  }, [session?.user?.id, status, router]);
 
   const handleEdit = (post) => {
     router.push(`/update-prompt?id=${post._id}`);
@@ -39,7 +52,6 @@ const MyProfile = () => {
         });
 
         const filteredPosts = myPosts.filter((item) => item._id !== post._id);
-
         setMyPosts(filteredPosts);
       } catch (error) {
         console.log(error);
@@ -47,10 +59,15 @@ const MyProfile = () => {
     }
   };
 
+  // Show a loading message until the posts are fetched
+  if (isLoading) {
+    return <p>Loading your posts...</p>;
+  }
+
   return (
     <Profile
-      name='My'
-      desc='Welcome to your personalized profile page. Share your exceptional prompts and inspire others with the power of your imagination'
+      name="My"
+      desc="Welcome to your personalized profile page. Share your exceptional prompts and inspire others with the power of your imagination"
       data={myPosts}
       handleEdit={handleEdit}
       handleDelete={handleDelete}

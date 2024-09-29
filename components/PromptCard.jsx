@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,45 +13,54 @@ const PromptCard = ({ post, handleEdit, handleDelete, handleTagClick }) => {
   const [copied, setCopied] = useState("");
 
   const handleProfileClick = () => {
-    console.log(post);
+    // Ensure post.creator exists
+    if (!post?.creator) return;
 
-    if (post.creator._id === session?.user.id) return router.push("/profile");
-
-    router.push(`/profile/${post.creator._id}?name=${post.creator.username}`);
+    if (post.creator._id === session?.user.id) {
+      router.push("/profile");
+    } else {
+      router.push(`/profile/${post.creator._id}?name=${post.creator.username}`);
+    }
   };
 
-  const handleCopy = () => {
+  // Use callback to optimize performance
+  const handleCopy = useCallback(() => {
     setCopied(post.prompt);
     navigator.clipboard.writeText(post.prompt);
     setTimeout(() => setCopied(false), 3000);
-  };
+  }, [post.prompt]);
 
   return (
-    <div className='prompt_card'>
-      <div className='flex justify-between items-start gap-5'>
+    <div className="prompt_card">
+      <div className="flex justify-between items-start gap-5">
+        {/* Creator Profile Section */}
         <div
-          className='flex-1 flex justify-start items-center gap-3 cursor-pointer'
+          className="flex-1 flex justify-start items-center gap-3 cursor-pointer"
           onClick={handleProfileClick}
         >
-          <Image
-            src={post.creator.image}
-            alt='user_image'
-            width={40}
-            height={40}
-            className='rounded-full object-contain'
-          />
+          {/* Safeguard against missing image or creator */}
+          {post?.creator?.image && (
+            <Image
+              src={post.creator.image}
+              alt="user_image"
+              width={40}
+              height={40}
+              className="rounded-full object-contain"
+            />
+          )}
 
-          <div className='flex flex-col'>
-            <h3 className='font-satoshi font-semibold text-gray-900'>
-              {post.creator.username}
+          <div className="flex flex-col">
+            <h3 className="font-satoshi font-semibold text-gray-900">
+              {post?.creator?.username || "Unknown User"}
             </h3>
-            <p className='font-inter text-sm text-gray-500'>
-              {post.creator.email}
+            <p className="font-inter text-sm text-gray-500">
+              {post?.creator?.email || "No email provided"}
             </p>
           </div>
         </div>
 
-        <div className='copy_btn' onClick={handleCopy}>
+        {/* Copy Button */}
+        <div className="copy_btn" onClick={handleCopy}>
           <Image
             src={
               copied === post.prompt
@@ -65,25 +74,29 @@ const PromptCard = ({ post, handleEdit, handleDelete, handleTagClick }) => {
         </div>
       </div>
 
-      <p className='my-4 font-satoshi text-sm text-gray-700'>{post.prompt}</p>
+      {/* Post Content */}
+      <p className="my-4 font-satoshi text-sm text-gray-700">{post.prompt}</p>
+
+      {/* Tag Click Handler */}
       <p
-        className='font-inter text-sm blue_gradient cursor-pointer'
-        onClick={() => handleTagClick && handleTagClick(post.tag)}
+        className="font-inter text-sm blue_gradient cursor-pointer"
+        onClick={() => handleTagClick?.(post.tag)}
       >
         #{post.tag}
       </p>
 
-      {session?.user.id === post.creator._id && pathName === "/profile" && (
-        <div className='mt-5 flex-center gap-4 border-t border-gray-100 pt-3'>
+      {/* Edit and Delete Options (Only for the creator on their profile page) */}
+      {session?.user.id === post?.creator?._id && pathName === "/profile" && (
+        <div className="mt-5 flex-center gap-4 border-t border-gray-100 pt-3">
           <p
-            className='font-inter text-sm green_gradient cursor-pointer'
-            onClick={handleEdit}
+            className="font-inter text-sm green_gradient cursor-pointer"
+            onClick={() => handleEdit?.(post)}
           >
             Edit
           </p>
           <p
-            className='font-inter text-sm orange_gradient cursor-pointer'
-            onClick={handleDelete}
+            className="font-inter text-sm orange_gradient cursor-pointer"
+            onClick={() => handleDelete?.(post)}
           >
             Delete
           </p>
