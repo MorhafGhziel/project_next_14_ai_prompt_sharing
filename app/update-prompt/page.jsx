@@ -12,19 +12,16 @@ const UpdatePrompt = () => {
 
   const [post, setPost] = useState({ prompt: "", tag: "" });
   const [submitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const getPromptDetails = async () => {
-      try {
-        const response = await fetch(`/api/prompt/${promptId}`);
-        if (!response.ok) throw new Error("Failed to fetch prompt details");
+      const response = await fetch(`/api/prompt/${promptId}`);
+      const data = await response.json();
 
-        const data = await response.json();
-        setPost({ prompt: data.prompt, tag: data.tag });
-      } catch (err) {
-        setError(err.message);
-      }
+      setPost({
+        prompt: data.prompt,
+        tag: data.tag,
+      });
     };
 
     if (promptId) getPromptDetails();
@@ -43,7 +40,6 @@ const UpdatePrompt = () => {
           prompt: post.prompt,
           tag: post.tag,
         }),
-        headers: { "Content-Type": "application/json" }, // Add headers
       });
 
       if (response.ok) {
@@ -51,15 +47,10 @@ const UpdatePrompt = () => {
       }
     } catch (error) {
       console.log(error);
-      setError("Failed to update prompt");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (error) {
-    return <div>Error: {error}</div>; // Handle error display
-  }
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
